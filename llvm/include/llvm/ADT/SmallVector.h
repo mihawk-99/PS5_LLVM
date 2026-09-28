@@ -1199,10 +1199,19 @@ template <typename T> struct CalculateSmallVectorDefaultInlinedElements {
 /// \warning This does not attempt to be exception safe.
 ///
 /// \see https://llvm.org/docs/ProgrammersManual.html#llvm-adt-smallvector-h
+#if defined(__SCE__)
+// The PS4 and PS5 ABIs do not let an empty base raise a class's alignment, so
+// SmallVectorStorage<T, 0>'s alignas(T) would not reach SmallVector<T, 0>.
+// SmallVector carries T's alignment itself there, and at least a pointer's,
+// which it has anyway.
+#define LLVM_SMALLVECTOR_ALIGNAS(T) alignas(T) alignas(void *)
+#else
+#define LLVM_SMALLVECTOR_ALIGNAS(T)
+#endif
 template <typename T,
           unsigned N = CalculateSmallVectorDefaultInlinedElements<T>::value>
-class LLVM_GSL_OWNER SmallVector : public SmallVectorImpl<T>,
-                                   SmallVectorStorage<T, N> {
+class LLVM_GSL_OWNER LLVM_SMALLVECTOR_ALIGNAS(T) SmallVector
+    : public SmallVectorImpl<T>, SmallVectorStorage<T, N> {
 public:
   SmallVector() : SmallVectorImpl<T>(N) {}
 
