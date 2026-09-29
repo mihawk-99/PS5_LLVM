@@ -173,6 +173,16 @@ protected:
 template <int Align, typename BaseTy, typename TopTrailingObj, typename PrevTy>
 class alignas(Align) TrailingObjectsImpl<Align, BaseTy, TopTrailingObj, PrevTy>
     : public TrailingObjectsBase {
+#if defined(__SCE__)
+  // The PS4 and PS5 ABIs do not let an empty base raise a class's alignment,
+  // and this class is what raises BaseTy's to its trailing types' own.
+  // Without it BaseTy keeps its members' alignment, and totalSizeToAlloc
+  // leaves out the padding getTrailingObjects puts before the first trailing
+  // array, so each allocation comes up short of its last trailing object. A
+  // zero-length member makes the class non-empty without storage of its own.
+  alignas(Align) char AlignTrailingObjects[0];
+#endif
+
 protected:
   // This is a dummy method, only here so the "using" doesn't fail --
   // it will never be called, because this function recurses backwards
